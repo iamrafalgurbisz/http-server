@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 
 enum class HttpRequestParseResult { Incomplete, Invalid, Complete };
@@ -30,7 +32,7 @@ private:
   std::string host_;
   std::string user_agent_;
   std::string accept_;
-  size_t content_length_;
+  size_t content_length_ = 0;
   std::string content_type_;
   std::string body_;
 };

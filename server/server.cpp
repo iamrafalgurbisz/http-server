@@ -1,5 +1,6 @@
 #include "server/server.hpp"
 #include "http/http-request.hpp"
+#include "http/http-response.hpp"
 #include <iostream>
 #include <netinet/in.h>
 #include <string>
@@ -13,7 +14,12 @@ void Server::start() {
   }
 
   int opt = 1;
-  setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+  int sockopt =
+      setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+  if (sockopt < 0) {
+    throw std::system_error(errno, std::generic_category(), "setsockopt");
+  }
 
   sockaddr_in server_address;
   server_address.sin_family = AF_INET;
@@ -45,6 +51,12 @@ void Server::start() {
     std::string buffer;
     HttpRequest req;
 
+    /*
+     * ========================================
+     * second loop because TCP is streamed,
+     * and we need to make sure that we got the whole response
+     * ========================================
+     */
     while (true) {
       char temp[4096];
 
@@ -67,10 +79,12 @@ void Server::start() {
       HttpRequestParseResult parse_result = req.parse(buffer);
 
       if (parse_result == HttpRequestParseResult::Incomplete) {
+        std::cout << "incomplete" << "\n";
         continue;
       }
 
       if (parse_result == HttpRequestParseResult::Invalid) {
+        std::cout << "400 bad req" << "\n";
         // TODO: send 400 Bad Request
         break;
       }
@@ -86,6 +100,31 @@ void Server::start() {
       std::cout << "Content-Length: " << req.content_length() << "\n";
       std::cout << "Content-Type: " << req.content_type() << "\n";
       std::cout << "Body: " << req.body() << "\n";
+
+      HttpResponse res(HttpStatus::OK);
+
+      size_t total_sent = 0;
+
+      while (total_sent < res.response().size()) {
+        ssize_t sent = send(client_socket, res.response().data() + total_sent,
+                            res.response().size() - total_sent, 0);
+
+        if (sent < 0) {
+          if (errno == EINTR) {
+            continue;
+          }
+
+          throw std::system_error(errno, std::generic_category(), "send");
+        }
+
+        if (sent == 0) {
+          throw std::runtime_error("send returned 0");
+        }
+
+        total_sent += static_cast<size_t>(sent);
+      }
+
+      std::cout << "response" << res.response() << "\n";
 
       break;
     }

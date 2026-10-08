@@ -10,6 +10,7 @@ add_executable(http-server
     main.cpp
     server/server.cpp
     http/http-request.cpp
+    http/http-response.cpp
 )
 
 target_include_directories(http-server PRIVATE

@@ -1,8 +1,6 @@
 #include "http-request.hpp"
 #include <charconv>
-#include <iostream>
 #include <system_error>
-#include <vector>
 
 const HttpRequestParseResult HttpRequest::parse(std::string_view buffer) {
   size_t req_pos = buffer.find("\r\n");
@@ -11,10 +9,7 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer) {
     return HttpRequestParseResult::Incomplete;
   }
 
-  // --------------------------------------------------
-  // Request line
-  // --------------------------------------------------
-
+  /* INFO: REQUEST LINE */
   std::string_view req(buffer.data(), req_pos);
 
   size_t req_separator_pos = req.find("/");
@@ -26,10 +21,7 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer) {
   method_ = req.substr(0, req_separator_pos);
   version_ = req.substr(req_separator_pos + 2);
 
-  // --------------------------------------------------
-  // Headers
-  // --------------------------------------------------
-
+  /* INFO: HEADERS */
   size_t headers_end_pos = buffer.find("\r\n\r\n", req_pos + 2);
 
   if (headers_end_pos == std::string_view::npos) {
