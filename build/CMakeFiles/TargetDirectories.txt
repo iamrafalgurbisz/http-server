@@ -1,0 +1,3 @@
+/home/rafal/Projects/http-server/build/CMakeFiles/http-server.dir
+/home/rafal/Projects/http-server/build/CMakeFiles/edit_cache.dir
+/home/rafal/Projects/http-server/build/CMakeFiles/rebuild_cache.dir

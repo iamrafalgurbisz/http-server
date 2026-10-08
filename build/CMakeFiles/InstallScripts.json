@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/rafal/Projects/http-server/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
