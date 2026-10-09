@@ -1,6 +1,6 @@
 #include "http-request.hpp"
+#include "http/http-method.hpp"
 #include <charconv>
-#include <iostream>
 #include <system_error>
 
 const HttpRequestParseResult HttpRequest::parse(std::string_view buffer) {
@@ -12,8 +12,6 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer) {
 
   /* INFO: REQUEST LINE */
   std::string_view req(buffer.data(), req_pos);
-
-  std::cout << "request line " << req << "\n";
 
   size_t req_first_space = req.find(' ');
   if (req_first_space == std::string_view::npos) {
@@ -29,12 +27,18 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer) {
     return HttpRequestParseResult::Invalid;
   }
 
-  method_ = req.substr(0, req_first_space);
+  HttpMethod method(req.substr(0, req_first_space));
+
+  if (!method.is_valid()) {
+    return HttpRequestParseResult::Invalid;
+  }
+
+  method_ = method;
   path_ =
       req.substr(req_first_space + 1, req_second_space - req_first_space - 1);
   version_ = req.substr(req_second_space + 1);
 
-  if (method_.empty() || path_.empty() || version_.empty()) {
+  if (path_.empty() || version_.empty()) {
     return HttpRequestParseResult::Invalid;
   }
 
@@ -143,7 +147,7 @@ HeaderKey HttpRequest::parse_header_key(std::string_view key) {
   return HeaderKey::Unknown;
 }
 
-const std::string &HttpRequest::method() const { return method_; }
+const HttpMethod &HttpRequest::method() const { return method_; }
 const std::string &HttpRequest::path() const { return path_; }
 const std::string &HttpRequest::version() const { return version_; }
 const std::string &HttpRequest::host() const { return host_; }

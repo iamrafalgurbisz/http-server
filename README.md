@@ -1,9 +1,12 @@
-learning project - http server implementation in c++
+# learning project - http server implementation in c++
+
 written with my bare hands
 
-todo:
+# todo:
 
-[] - extract response sending logic to a separate method
-[] - return 400 when needed
-[] - differ http methods in router.handlers
-[] - add body to HttpResponse
+- [ ] implement running flag
+- [x] extract response sending logic to a separate method
+- [x] return 400 when needed
+- [x] return 404 when needed
+- [ ] differ http methods in router.handlers
+- [ ] add body to HttpResponse

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "http/http-method.hpp"
 #include <string>
 
 enum class HttpRequestParseResult { Incomplete, Invalid, Complete };
@@ -16,7 +17,7 @@ enum class HeaderKey {
 class HttpRequest {
 public:
   const HttpRequestParseResult parse(std::string_view buffer);
-  const std::string &method() const;
+  const HttpMethod &method() const;
   const std::string &path() const;
   const std::string &version() const;
   const std::string &host() const;
@@ -28,7 +29,7 @@ public:
 
 private:
   static HeaderKey parse_header_key(std::string_view key);
-  std::string method_;
+  HttpMethod method_;
   std::string path_;
   std::string version_;
   std::string host_;

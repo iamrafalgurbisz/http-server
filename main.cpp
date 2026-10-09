@@ -4,8 +4,6 @@
 #include <iostream>
 
 int main() {
-  Server server;
-
   Router router;
 
   router.get("/api", []() {
@@ -14,8 +12,10 @@ int main() {
     return res;
   });
 
+  Server server(router);
+
   try {
-    server.start(3000, router);
+    server.start(3000);
   } catch (const std::exception &e) {
     std::cerr << "Server error: " << e.what() << '\n';
 

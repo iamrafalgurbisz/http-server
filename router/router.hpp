@@ -8,6 +8,7 @@
 class Router {
 public:
   void get(std::string path, std::function<HttpResponse()> handler);
+  void post(std::string path, std::function<HttpResponse()> handler);
   const std::map<std::string, std::function<HttpResponse()>> &handlers() const;
 
 private:

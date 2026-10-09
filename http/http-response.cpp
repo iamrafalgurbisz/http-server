@@ -27,6 +27,8 @@ std::string HttpResponse::get_status_line() const {
     return std::to_string(static_cast<int>(status_)) + " OK";
   case HttpStatus::NOT_FOUND:
     return std::to_string(static_cast<int>(status_)) + " Not Found";
+  case HttpStatus::BAD_REQUEST:
+    return std::to_string(static_cast<int>(status_)) + " Bad Request";
   }
 
   return "500 Internal Server Error";
