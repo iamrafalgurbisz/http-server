@@ -1,8 +1,9 @@
 #include "http-response.hpp"
 #include <string>
 
-HttpResponse::HttpResponse(HttpStatus status) {
+HttpResponse::HttpResponse(HttpStatus status, std::string_view body) {
   status_ = status;
+  body_ = body;
 
   serialize();
 }
@@ -14,9 +15,19 @@ void HttpResponse::serialize() {
   res += std::to_string(static_cast<int>(status_));
   res += "\r\n";
   res += "Content-Type: text/plain; charset=utf-8\r\n";
-  res += "Content-Length: 0\r\n";
+
+  if (!body_.empty()) {
+    res += "Content-Length: " + std::to_string(body_.size()) + "\r\n";
+  } else {
+    res += "Content-Length: 0\r\n";
+  }
+
   res += "Connection: close\r\n";
   res += "\r\n";
+
+  if (!body_.empty()) {
+    res += body_;
+  }
 
   response_ = res;
 }
