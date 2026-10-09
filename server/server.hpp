@@ -1,9 +1,10 @@
+#include "router/router.hpp"
 class Server {
 public:
-  void start();
+  void start(int PORT, Router router);
   void close();
 
 private:
-  int server_socket = -1;
-  int client_socket = -1;
+  int server_socket_ = -1;
+  int client_socket_ = -1;
 };

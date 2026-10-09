@@ -1,5 +1,6 @@
 #include "http-request.hpp"
 #include <charconv>
+#include <iostream>
 #include <system_error>
 
 const HttpRequestParseResult HttpRequest::parse(std::string_view buffer) {
@@ -12,14 +13,30 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer) {
   /* INFO: REQUEST LINE */
   std::string_view req(buffer.data(), req_pos);
 
-  size_t req_separator_pos = req.find("/");
+  std::cout << "request line " << req << "\n";
 
-  if (req_separator_pos == std::string_view::npos) {
+  size_t req_first_space = req.find(' ');
+  if (req_first_space == std::string_view::npos) {
     return HttpRequestParseResult::Invalid;
   }
 
-  method_ = req.substr(0, req_separator_pos);
-  version_ = req.substr(req_separator_pos + 2);
+  size_t req_second_space = req.find(' ', req_first_space + 1);
+  if (req_second_space == std::string_view::npos) {
+    return HttpRequestParseResult::Invalid;
+  }
+
+  if (req.find(' ', req_second_space + 1) != std::string_view::npos) {
+    return HttpRequestParseResult::Invalid;
+  }
+
+  method_ = req.substr(0, req_first_space);
+  path_ =
+      req.substr(req_first_space + 1, req_second_space - req_first_space - 1);
+  version_ = req.substr(req_second_space + 1);
+
+  if (method_.empty() || path_.empty() || version_.empty()) {
+    return HttpRequestParseResult::Invalid;
+  }
 
   /* INFO: HEADERS */
   size_t headers_end_pos = buffer.find("\r\n\r\n", req_pos + 2);
@@ -127,6 +144,7 @@ HeaderKey HttpRequest::parse_header_key(std::string_view key) {
 }
 
 const std::string &HttpRequest::method() const { return method_; }
+const std::string &HttpRequest::path() const { return path_; }
 const std::string &HttpRequest::version() const { return version_; }
 const std::string &HttpRequest::host() const { return host_; }
 const std::string &HttpRequest::user_agent() const { return user_agent_; }
