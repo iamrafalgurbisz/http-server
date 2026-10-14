@@ -14,14 +14,9 @@ HttpMethod::HttpMethod(std::string_view method_str) {
 }
 
 const std::string HttpMethod::str() const { return str_; }
+const HttpMethodKey HttpMethod::key() const { return key_; }
 
-const bool HttpMethod::is_valid() const {
-  if (key_ == HttpMethodKey::Unknown) {
-    return false;
-  }
-
-  return true;
-}
+const bool HttpMethod::is_valid() const { return is_valid_; }
 
 const HttpMethodKey HttpMethod::parse_key_(std::string_view method_str) const {
   if (method_str == "GET") {

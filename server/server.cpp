@@ -1,4 +1,5 @@
 #include "server/server.hpp"
+#include "http/http-method.hpp"
 #include "http/http-request.hpp"
 #include "http/http-response.hpp"
 #include "router/router.hpp"
@@ -6,14 +7,17 @@
 #include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
+#include <system_error>
 #include <unistd.h>
 
 Server::Server(Router router) { router_ = router; }
 
 void Server::start(int PORT) {
+  constexpr std::size_t MAX_BODY_SIZE = 32 * 1024;
+
   server_socket_ = socket(AF_INET, SOCK_STREAM, 0);
   if (server_socket_ < 0) {
-    throw std::system_error(errno, std::generic_category(), "bind");
+    throw std::system_error(errno, std::generic_category(), "server_socket");
   }
 
   int opt = 1;
@@ -37,8 +41,9 @@ void Server::start(int PORT) {
   }
 
   int listener = listen(server_socket_, 5);
+
   if (listener < 0) {
-    throw std::system_error(errno, std::generic_category(), "bind");
+    throw std::system_error(errno, std::generic_category(), "listen");
   }
 
   std::cout << "Listening on port " << PORT << "..." << "\n";
@@ -48,6 +53,7 @@ void Server::start(int PORT) {
 
 void Server::loop_() {
   while (true) {
+    bool already_responded = false;
     client_socket_ = accept(server_socket_, nullptr, nullptr);
 
     if (client_socket_ < 0) {
@@ -82,24 +88,77 @@ void Server::loop_() {
 
       HttpRequestParseResult parse_result = req.parse(buffer);
 
+      std::cout << "[" << req.method().str() << "] " << req.path() << "\n";
+
       if (parse_result == HttpRequestParseResult::Incomplete) {
         continue;
       }
 
-      if (parse_result == HttpRequestParseResult::Invalid) {
-        HttpResponse res(HttpStatus::BAD_REQUEST);
-
-        respond_(res);
+      if (parse_result == HttpRequestParseResult::UriTooLarge) {
+        respond_(HttpResponse(HttpStatus::URI_TOO_LARGE));
 
         break;
       }
 
-      std::cout << "[" << req.method().str() << "] " << req.path() << "\n";
+      if (parse_result == HttpRequestParseResult::HeadersTooLarge) {
+        respond_(HttpResponse(HttpStatus::HEADERS_TOO_LARGE));
+
+        break;
+      }
+
+      if (parse_result == HttpRequestParseResult::BodyTooLarge) {
+        respond_(HttpResponse(HttpStatus::BODY_TOO_LARGE));
+
+        break;
+      }
+
+      if (parse_result == HttpRequestParseResult::UnknownExpectation) {
+        respond_(HttpResponse(HttpStatus::EXPECTATION_FAILED));
+
+        break;
+      }
+
+      if (parse_result == HttpRequestParseResult::Invalid) {
+        std::cout << "Respond with bad request\n";
+
+        respond_(HttpResponse(HttpStatus::BAD_REQUEST));
+
+        break;
+      }
+
+      if (req.expect() == Expectation::Continue) {
+        std::cout << "waiting for body...\n";
+
+        HttpResponse res(HttpStatus::CONTINUE);
+
+        if (!already_responded) {
+          respond_(res);
+          already_responded = true;
+        }
+
+        if (parse_result == HttpRequestParseResult::Incomplete) {
+          continue;
+        }
+      }
 
       if (router_.handlers().find(req.method().str() + req.path()) !=
           router_.handlers().end()) {
-        HttpResponse res =
-            router_.handlers().find(req.method().str() + req.path())->second();
+        if (req.method().key() == HttpMethodKey::Head &&
+            router_.handlers().find("GET" + req.path()) !=
+                router_.handlers().end()) {
+          std::cout << "HEAD request " << req.path() << " was mapped to GET\n";
+
+          HttpResponse res =
+              router_.handlers().find("GET" + req.path())->second(req);
+
+          respond_(res);
+
+          break;
+        }
+
+        HttpResponse res = router_.handlers()
+                               .find(req.method().str() + req.path())
+                               ->second(req);
 
         respond_(res);
 
@@ -120,9 +179,11 @@ void Server::loop_() {
 void Server::respond_(HttpResponse res) {
   size_t total_sent = 0;
 
-  while (total_sent < res.response().size()) {
-    ssize_t sent = send(client_socket_, res.response().data() + total_sent,
-                        res.response().size() - total_sent, 0);
+  std::string serialized = res.get_serialized();
+
+  while (total_sent < serialized.size()) {
+    ssize_t sent = send(client_socket_, serialized.data() + total_sent,
+                        serialized.size() - total_sent, 0);
 
     if (sent < 0) {
       if (errno == EINTR) {

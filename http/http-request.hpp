@@ -3,7 +3,17 @@
 #include "http/http-method.hpp"
 #include <string>
 
-enum class HttpRequestParseResult { Incomplete, Invalid, Complete };
+enum class Expectation { Continue, Unknown };
+
+enum class HttpRequestParseResult {
+  Incomplete,
+  Invalid,
+  Complete,
+  UriTooLarge,
+  HeadersTooLarge,
+  BodyTooLarge,
+  UnknownExpectation
+};
 
 enum class HeaderKey {
   Host,
@@ -11,6 +21,7 @@ enum class HeaderKey {
   Accept,
   ContentLength,
   ContentType,
+  Expect,
   Unknown
 };
 
@@ -23,18 +34,21 @@ public:
   const std::string &host() const;
   const std::string &user_agent() const;
   const std::string &accept() const;
+  const Expectation &expect() const;
   const size_t &content_length() const;
   const std::string &content_type() const;
   const std::string &body() const;
 
 private:
-  static HeaderKey parse_header_key(std::string_view key);
+  static HeaderKey parse_header_key_(std::string_view key);
+  static Expectation parse_expectation_(std::string_view str);
   HttpMethod method_;
   std::string path_;
   std::string version_;
   std::string host_;
   std::string user_agent_;
   std::string accept_;
+  Expectation expect_;
   size_t content_length_ = 0;
   std::string content_type_;
   std::string body_;

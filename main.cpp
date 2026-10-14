@@ -1,3 +1,4 @@
+#include "http/http-request.hpp"
 #include "http/http-response.hpp"
 #include "router/router.hpp"
 #include "server/server.hpp"
@@ -6,7 +7,13 @@
 int main() {
   Router router;
 
-  router.get("/api", []() {
+  router.head("/api", [](const HttpRequest) {
+    HttpResponse res(HttpStatus::OK, "Hello from the server!");
+
+    return res;
+  });
+
+  router.post("/api", [](const HttpRequest) {
     HttpResponse res(HttpStatus::OK, "Hello from the server!");
 
     return res;
