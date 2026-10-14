@@ -10,42 +10,57 @@
 void Router::get(std::string path, Handler handler) {
   HttpMethod method("GET");
 
-  std::string handler_key = method.str() + path;
-
-  if (handlers_.find(handler_key) != handlers_.end()) {
-    throw std::runtime_error("Error: Path " + path + " was reused.");
-  }
-
-  handlers_.insert({handler_key, wrap_handler_(method, handler)});
+  apply_handler_(method, path, handler);
 }
 
 void Router::post(std::string path, Handler handler) {
   HttpMethod method("POST");
 
-  std::string handler_key = method.str() + path;
-
-  if (handlers_.find(handler_key) != handlers_.end()) {
-    throw std::runtime_error("Error: Path " + path + " was reused.");
-  }
-
-  handlers_.insert({handler_key, wrap_handler_(method, handler)});
+  apply_handler_(method, path, handler);
 }
 
 void Router::head(std::string path, Handler handler) {
   HttpMethod method("HEAD");
 
-  std::string handler_key = method.str() + path;
+  apply_handler_(method, path, handler);
+}
 
-  if (handlers_.find(handler_key) != handlers_.end()) {
+void Router::apply_handler_(HttpMethod method, std::string path,
+                            Handler handler) {
+  bool path_exists = handlers_.find(path) != handlers_.end();
+
+  if (!path_exists) {
+    std::map<HttpMethodKey, Handler> new_handlers;
+    new_handlers.insert({method.key(), wrap_handler_(method, handler)});
+
+    handlers_.insert({path, new_handlers});
+
+    return;
+  }
+
+  auto &found_handlers = handlers_.find(path)->second;
+  bool method_exists =
+      found_handlers.find(method.key()) != found_handlers.end();
+
+  if (path_exists && method_exists) {
     throw std::runtime_error("Error: Path " + path + " was reused.");
   }
 
-  handlers_.insert({handler_key, wrap_handler_(method, handler)});
+  if (path_exists && !method_exists) {
+    found_handlers.insert({method.key(), wrap_handler_(method, handler)});
+
+    return;
+  }
+
+  throw std::runtime_error("Error: apply_handler");
 }
 
 Handler Router::wrap_handler_(HttpMethod method, Handler handler) {
   return [method, handler](const HttpRequest &req) -> HttpResponse {
     HttpResponse res = handler(req);
+
+    std::cout << "wrapper, " << method.str() << ", " << req.method().str()
+              << "\n";
 
     if (method.key() == HttpMethodKey::Head && res.has_body()) {
       std::cout << "Warning: HEAD response should NOT have body\n";
@@ -63,7 +78,4 @@ Handler Router::wrap_handler_(HttpMethod method, Handler handler) {
   };
 };
 
-const std::map<std::string, std::function<HttpResponse(const HttpRequest &)>> &
-Router::handlers() const {
-  return handlers_;
-}
+const Handlers &Router::handlers() const { return handlers_; }

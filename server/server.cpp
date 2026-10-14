@@ -141,24 +141,30 @@ void Server::loop_() {
         }
       }
 
-      if (router_.handlers().find(req.method().str() + req.path()) !=
-          router_.handlers().end()) {
+      if (router_.handlers().find(req.path()) != router_.handlers().end()) {
+        auto path_handlers = router_.handlers().find(req.path())->second;
+
         if (req.method().key() == HttpMethodKey::Head &&
-            router_.handlers().find("GET" + req.path()) !=
-                router_.handlers().end()) {
+            path_handlers.find(HttpMethodKey::Get) != path_handlers.end()) {
           std::cout << "HEAD request " << req.path() << " was mapped to GET\n";
 
           HttpResponse res =
-              router_.handlers().find("GET" + req.path())->second(req);
+              path_handlers.find(HttpMethodKey::Get)->second(req);
 
           respond_(res);
 
           break;
         }
 
-        HttpResponse res = router_.handlers()
-                               .find(req.method().str() + req.path())
-                               ->second(req);
+        if (path_handlers.find(req.method().key()) == path_handlers.end()) {
+          HttpResponse res(HttpStatus::METHOD_NOT_ALLOWED);
+
+          respond_(res);
+
+          break;
+        }
+
+        HttpResponse res = path_handlers.find(req.method().key())->second(req);
 
         respond_(res);
 

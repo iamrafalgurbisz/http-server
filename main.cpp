@@ -7,13 +7,7 @@
 int main() {
   Router router;
 
-  router.head("/api", [](const HttpRequest) {
-    HttpResponse res(HttpStatus::OK, "Hello from the server!");
-
-    return res;
-  });
-
-  router.post("/api", [](const HttpRequest) {
+  router.get("/api", [](const HttpRequest) {
     HttpResponse res(HttpStatus::OK, "Hello from the server!");
 
     return res;

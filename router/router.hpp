@@ -8,16 +8,17 @@
 #include <string>
 
 using Handler = std::function<HttpResponse(const HttpRequest &)>;
+using Handlers = std::map<std::string, std::map<HttpMethodKey, Handler>>;
 
 class Router {
 public:
   void get(std::string, Handler);
   void head(std::string, Handler);
   void post(std::string, Handler);
-  const std::map<std::string, Handler> &handlers() const;
+  const Handlers &handlers() const;
 
 private:
+  void apply_handler_(HttpMethod method, std::string path, Handler handler);
   Handler wrap_handler_(HttpMethod method, Handler handler);
-  std::map<std::string, std::function<HttpResponse(const HttpRequest &req)>>
-      handlers_;
+  Handlers handlers_;
 };

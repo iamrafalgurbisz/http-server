@@ -49,6 +49,8 @@ std::string HttpResponse::get_status_line_() const {
     return std::to_string(static_cast<int>(status_)) + " Bad Request";
   case HttpStatus::NOT_FOUND:
     return std::to_string(static_cast<int>(status_)) + " Not Found";
+  case HttpStatus::METHOD_NOT_ALLOWED:
+    return std::to_string(static_cast<int>(status_)) + " Method Not Allowed";
   case HttpStatus::BODY_TOO_LARGE:
     return std::to_string(static_cast<int>(status_)) + " Content Too Large";
   case HttpStatus::URI_TOO_LARGE:
