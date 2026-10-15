@@ -5,7 +5,7 @@
 
 class Server {
 public:
-  Server(Router router);
+  Server(const Router &router);
   void start(int PORT);
   void close();
 
@@ -15,5 +15,5 @@ private:
   Router router_;
 
   void loop_();
-  void respond_(HttpResponse res);
+  void respond_(const HttpResponse &res);
 };

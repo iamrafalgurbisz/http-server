@@ -4,6 +4,15 @@
 
 HttpResponse::HttpResponse(HttpStatus status, std::string_view body) {
   status_ = status;
+
+  if (status == HttpStatus::CONTINUE && !body.empty()) {
+    std::cout << "Warning: HTTP 1xx responses cannot have body\n";
+
+    clear_body();
+
+    return;
+  }
+
   body_ = body;
 }
 

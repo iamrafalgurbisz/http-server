@@ -7,7 +7,7 @@
 int main() {
   Router router;
 
-  router.get("/api", [](const HttpRequest) {
+  router.get("/api", [](const HttpRequest &) {
     HttpResponse res(HttpStatus::OK, "Hello from the server!");
 
     return res;

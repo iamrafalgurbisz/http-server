@@ -7,26 +7,26 @@
 #include <stdexcept>
 #include <string>
 
-void Router::get(std::string path, Handler handler) {
+void Router::get(const std::string &path, const Handler &handler) {
   HttpMethod method("GET");
 
   apply_handler_(method, path, handler);
 }
 
-void Router::post(std::string path, Handler handler) {
+void Router::post(const std::string &path, const Handler &handler) {
   HttpMethod method("POST");
 
   apply_handler_(method, path, handler);
 }
 
-void Router::head(std::string path, Handler handler) {
+void Router::head(const std::string &path, const Handler &handler) {
   HttpMethod method("HEAD");
 
   apply_handler_(method, path, handler);
 }
 
-void Router::apply_handler_(HttpMethod method, std::string path,
-                            Handler handler) {
+void Router::apply_handler_(const HttpMethod &method, const std::string &path,
+                            const Handler &handler) {
   bool path_exists = handlers_.find(path) != handlers_.end();
 
   if (!path_exists) {
@@ -55,7 +55,8 @@ void Router::apply_handler_(HttpMethod method, std::string path,
   throw std::runtime_error("Error: apply_handler");
 }
 
-Handler Router::wrap_handler_(HttpMethod method, Handler handler) {
+Handler Router::wrap_handler_(const HttpMethod &method,
+                              const Handler &handler) {
   return [method, handler](const HttpRequest &req) -> HttpResponse {
     HttpResponse res = handler(req);
 

@@ -18,9 +18,9 @@ class HttpMethod {
 public:
   HttpMethod() = default;
   HttpMethod(std::string_view method_str);
-  const std::string str() const;
-  const HttpMethodKey key() const;
-  const bool is_valid() const;
+  const std::string &str() const;
+  HttpMethodKey key() const;
+  bool is_valid() const;
 
 private:
   const HttpMethodKey parse_key_(std::string_view method_str) const;

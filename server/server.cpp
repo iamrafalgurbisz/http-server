@@ -10,7 +10,7 @@
 #include <system_error>
 #include <unistd.h>
 
-Server::Server(Router router) { router_ = router; }
+Server::Server(const Router &router) : router_(router) {};
 
 void Server::start(int PORT) {
   constexpr std::size_t MAX_BODY_SIZE = 32 * 1024;
@@ -142,7 +142,7 @@ void Server::loop_() {
       }
 
       if (router_.handlers().find(req.path()) != router_.handlers().end()) {
-        auto path_handlers = router_.handlers().find(req.path())->second;
+        const auto &path_handlers = router_.handlers().find(req.path())->second;
 
         if (req.method().key() == HttpMethodKey::Head &&
             path_handlers.find(HttpMethodKey::Get) != path_handlers.end()) {
@@ -182,7 +182,7 @@ void Server::loop_() {
   }
 }
 
-void Server::respond_(HttpResponse res) {
+void Server::respond_(const HttpResponse &res) {
   size_t total_sent = 0;
 
   std::string serialized = res.get_serialized();

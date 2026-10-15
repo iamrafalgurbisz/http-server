@@ -197,8 +197,6 @@ HeaderKey HttpRequest::parse_header_key_(std::string_view key) {
 }
 
 Expectation HttpRequest::parse_expectation_(std::string_view str) {
-  std::cout << "parse expectation, " << str << "\n";
-
   if (str == "100-continue") {
     return Expectation::Continue;
   }

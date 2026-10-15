@@ -12,13 +12,14 @@ using Handlers = std::map<std::string, std::map<HttpMethodKey, Handler>>;
 
 class Router {
 public:
-  void get(std::string, Handler);
-  void head(std::string, Handler);
-  void post(std::string, Handler);
+  void get(const std::string &, const Handler &);
+  void head(const std::string &, const Handler &);
+  void post(const std::string &, const Handler &);
   const Handlers &handlers() const;
 
 private:
-  void apply_handler_(HttpMethod method, std::string path, Handler handler);
-  Handler wrap_handler_(HttpMethod method, Handler handler);
+  void apply_handler_(const HttpMethod &method, const std::string &path,
+                      const Handler &handler);
+  Handler wrap_handler_(const HttpMethod &method, const Handler &handler);
   Handlers handlers_;
 };
