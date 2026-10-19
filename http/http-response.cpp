@@ -69,9 +69,15 @@ std::string HttpResponse::get_status_line_() const {
   case HttpStatus::HEADERS_TOO_LARGE:
     return std::to_string(static_cast<int>(status_)) +
            " Request Header Fields Too Large";
+  case HttpStatus::INTERNAL_SERVER_ERROR:
+    return std::to_string(static_cast<int>(status_)) + " Internal Server Error";
+  case HttpStatus::HTTP_VERSION_NOT_SUPPORTED:
+    return std::to_string(static_cast<int>(status_)) +
+           " HTTP Version Not Supported";
   }
 
-  return "500 Internal Server Error";
+  return std::to_string(static_cast<int>(HttpStatus::INTERNAL_SERVER_ERROR)) +
+         "Internal Server Error";
 };
 
 bool HttpResponse::has_body() const { return !body_.empty(); }

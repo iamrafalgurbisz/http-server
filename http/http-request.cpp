@@ -1,5 +1,6 @@
 #include "http-request.hpp"
 #include "http/http-method.hpp"
+#include <algorithm>
 #include <charconv>
 #include <iostream>
 #include <system_error>
@@ -169,27 +170,27 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer) {
 }
 
 HeaderKey HttpRequest::parse_header_key_(std::string_view key) {
-  if (key == "Host") {
+  if (to_lower_(key) == "host") {
     return HeaderKey::Host;
   }
 
-  if (key == "User-Agent") {
+  if (to_lower_(key) == "user-agent") {
     return HeaderKey::UserAgent;
   }
 
-  if (key == "Accept") {
+  if (to_lower_(key) == "accept") {
     return HeaderKey::Accept;
   }
 
-  if (key == "Expect") {
+  if (to_lower_(key) == "expect") {
     return HeaderKey::Expect;
   }
 
-  if (key == "Content-Length") {
+  if (to_lower_(key) == "content-length") {
     return HeaderKey::ContentLength;
   }
 
-  if (key == "Content-Type") {
+  if (to_lower_(key) == "content-type") {
     return HeaderKey::ContentType;
   }
 
@@ -202,6 +203,16 @@ Expectation HttpRequest::parse_expectation_(std::string_view str) {
   }
 
   return Expectation::Unknown;
+}
+
+std::string HttpRequest::to_lower_(std::string_view str) {
+  std::string result(str);
+
+  std::transform(
+      result.begin(), result.end(), result.begin(),
+      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+  return result;
 }
 
 const HttpMethod &HttpRequest::method() const { return method_; }

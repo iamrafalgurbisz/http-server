@@ -3,6 +3,7 @@
 #include "http/http-request.hpp"
 #include "http/http-response.hpp"
 #include "router/router.hpp"
+#include <cerrno>
 #include <iostream>
 #include <netinet/in.h>
 #include <string>
@@ -57,6 +58,18 @@ void Server::loop_() {
     client_socket_ = accept(server_socket_, nullptr, nullptr);
 
     if (client_socket_ < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+
+      if (errno == ECONNABORTED) {
+        continue;
+      }
+
+      if (errno == EMFILE) {
+        continue;
+      }
+
       throw std::system_error(errno, std::generic_category(), "accept");
     }
 
@@ -75,7 +88,6 @@ void Server::loop_() {
       ssize_t n = recv(client_socket_, temp, sizeof(temp), 0);
 
       if (n == 0) {
-        std::cout << "Client disconnected" << "\n";
         break;
       }
 
@@ -119,16 +131,16 @@ void Server::loop_() {
       }
 
       if (parse_result == HttpRequestParseResult::Invalid) {
-        std::cout << "Respond with bad request\n";
-
         respond_(HttpResponse(HttpStatus::BAD_REQUEST));
 
         break;
       }
 
-      if (req.expect() == Expectation::Continue) {
-        std::cout << "waiting for body...\n";
+      if (!req.version().ends_with("1.1")) {
+        respond_(HttpResponse(HttpStatus::HTTP_VERSION_NOT_SUPPORTED));
+      }
 
+      if (req.expect() == Expectation::Continue) {
         HttpResponse res(HttpStatus::CONTINUE);
 
         if (!already_responded) {

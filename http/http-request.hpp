@@ -42,6 +42,8 @@ public:
 private:
   static HeaderKey parse_header_key_(std::string_view key);
   static Expectation parse_expectation_(std::string_view str);
+  static std::string to_lower_(std::string_view str);
+
   HttpMethod method_;
   std::string path_;
   std::string version_;
