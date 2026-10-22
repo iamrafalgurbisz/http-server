@@ -3,7 +3,8 @@
 #include <string>
 #include <string_view>
 
-enum class HttpMethodKey {
+enum class HttpMethodKey
+{
   Get,
   Post,
   Put,
@@ -14,17 +15,21 @@ enum class HttpMethodKey {
   Unknown
 };
 
-class HttpMethod {
-public:
+class HttpMethod
+{
+ public:
   HttpMethod() = default;
-  HttpMethod(std::string_view method_str);
-  const std::string &str() const;
-  HttpMethodKey key() const;
-  bool is_valid() const;
+  HttpMethod(const std::string_view& method_str);
+  HttpMethod(const HttpMethodKey& method_key);
 
-private:
-  const HttpMethodKey parse_key_(std::string_view method_str) const;
-  std::string str_;
+  const std::string& str() const;
+  HttpMethodKey      key() const;
+  bool               is_valid() const;
+
+ private:
+  std::string   parse_key_(const HttpMethodKey& method_str) const;
+  HttpMethodKey parse_str_(std::string_view method_str) const;
+  std::string   str_;
   HttpMethodKey key_;
-  bool is_valid_;
+  bool          is_valid_;
 };

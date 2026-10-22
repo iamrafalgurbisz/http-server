@@ -1,0 +1,4 @@
+BasedOnStyle: Google
+AlignConsecutiveDeclarations: Consecutive
+AlignConsecutiveAssignments: Consecutive
+BreakBeforeBraces: Allman

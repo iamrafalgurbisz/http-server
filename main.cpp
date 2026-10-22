@@ -1,23 +1,48 @@
+#include <iostream>
+
 #include "http/http-request.hpp"
 #include "http/http-response.hpp"
 #include "router/router.hpp"
 #include "server/server.hpp"
-#include <iostream>
 
-int main() {
+int main()
+{
   Router router;
 
-  router.get("/api", [](const HttpRequest &) {
-    HttpResponse res(HttpStatus::OK, "Hello from the server!");
+  router.get("/api",
+             [](const HttpRequest&)
+             {
+               auto res = HttpResponse::Ok()
+                              .body("Hello from the server!")
+                              .header(HeaderKey::ContentLength, "20");
 
-    return res;
-  });
+               return res;
+             });
+
+  router.post("/api",
+              [](const HttpRequest&)
+              {
+                auto res = HttpResponse::Ok().body("Hello");
+
+                return res;
+              });
+
+  router.head("/api",
+              [](const HttpRequest&)
+              {
+                auto res = HttpResponse::Ok();
+
+                return res;
+              });
 
   Server server(router);
 
-  try {
+  try
+  {
     server.start(3000);
-  } catch (const std::exception &e) {
+  }
+  catch (const std::exception& e)
+  {
     std::cerr << "Server error: " << e.what() << '\n';
 
     return 1;

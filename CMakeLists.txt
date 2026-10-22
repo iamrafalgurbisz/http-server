@@ -11,6 +11,7 @@ add_executable(http-server
     router/router.cpp
     server/server.cpp
     http/http-method.cpp
+    http/http-headers.cpp
     http/http-request.cpp
     http/http-response.cpp
 )
