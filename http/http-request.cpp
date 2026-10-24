@@ -115,7 +115,7 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
     switch (header_key)
     {
       case HeaderKey::Host:
-        if (header_value.empty())
+        if (header_value.empty() || !host_.empty())
         {
           return HttpRequestParseResult::Invalid;
         }
@@ -141,6 +141,11 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
 
       case HeaderKey::ContentLength:
       {
+        if (content_length_ != 0)
+        {
+          return HttpRequestParseResult::Invalid;
+        }
+
         std::size_t result;
 
         auto parse_result =
@@ -161,6 +166,11 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
       }
 
       case HeaderKey::ContentType:
+        if (!content_type_.empty())
+        {
+          return HttpRequestParseResult::Invalid;
+        }
+
         content_type_ = header_value;
 
         break;
@@ -184,6 +194,11 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
     }
 
     i = pos + 2;
+  }
+
+  if (host_.empty())
+  {
+    return HttpRequestParseResult::UnknownExpectation;
   }
 
   size_t body_start    = headers_end_pos + 4;
