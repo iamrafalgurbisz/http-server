@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <csignal>
 #include <iostream>
 #include <string>
 #include <system_error>
@@ -16,8 +17,28 @@
 
 Server::Server(const Router& router) : router_(router) {};
 
+volatile std::sig_atomic_t Server::running_ = 0;
+
+void Server::handle_signal_(int sig) { running_ = 0; }
+
+void Server::install_signal_handlers_()
+{
+  struct sigaction sa{};
+  sa.sa_handler = handle_signal_;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+
+  sigaction(SIGINT, &sa, nullptr);
+  sigaction(SIGTERM, &sa, nullptr);
+
+  std::signal(SIGPIPE, SIG_IGN);
+};
+
 void Server::start(int PORT)
 {
+  running_ = 1;
+  install_signal_handlers_();
+
   constexpr std::size_t MAX_BODY_SIZE = 32 * 1024;
 
   server_socket_ = socket(AF_INET, SOCK_STREAM, 0);
@@ -62,7 +83,7 @@ void Server::start(int PORT)
 
 void Server::loop_()
 {
-  while (true)
+  while (running_)
   {
     bool already_responded = false;
     client_socket_         = accept(server_socket_, nullptr, nullptr);
@@ -109,6 +130,15 @@ void Server::loop_()
 
       if (n < 0)
       {
+        if (errno == EINTR)
+        {
+          if (!running_)
+          {
+            break;
+          }
+          continue;
+        }
+
         std::perror("recv");
         break;
       }
@@ -269,6 +299,11 @@ void Server::respond_(const HttpResponse& res)
         continue;
       }
 
+      if (errno == EPIPE || errno == ECONNRESET)
+      {
+        return;
+      }
+
       throw std::system_error(errno, std::generic_category(), "send");
     }
 
@@ -281,16 +316,17 @@ void Server::respond_(const HttpResponse& res)
   }
 }
 
-// not used, implement with SIGINT and running flag later
 void Server::close()
 {
   if (client_socket_ >= 0)
   {
     ::close(client_socket_);
+    client_socket_ = -1;
   }
 
   if (server_socket_ >= 0)
   {
     ::close(server_socket_);
+    server_socket_ = -1;
   }
 }

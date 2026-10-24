@@ -1,4 +1,6 @@
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 #include "http/http-request.hpp"
 #include "http/http-response.hpp"
@@ -8,6 +10,15 @@
 int main()
 {
   Router router;
+
+  router.get(
+      "/slow",
+      [](const HttpRequest&)
+      {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        return HttpResponse::Ok().body(std::string(10 * 1024 * 1024, 'x'));
+      });
 
   router.get("/api",
              [](const HttpRequest&)
