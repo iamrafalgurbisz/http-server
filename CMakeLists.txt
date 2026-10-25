@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(http-server
     main.cpp
+    logger/logger.cpp
     router/router.cpp
     server/server.cpp
     http/http-method.cpp

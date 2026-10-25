@@ -1,10 +1,10 @@
 #include "http/http-response.hpp"
 
-#include <iostream>
 #include <map>
 #include <string>
 
 #include "http/http-request.hpp"
+#include "logger/logger.hpp"
 
 HttpResponse::HttpResponse(HttpStatus status) : status_(status) {}
 
@@ -58,14 +58,14 @@ HttpResponse& HttpResponse::body(std::string_view body) &
 {
   if (status_ == HttpStatus::CONTINUE)
   {
-    std::cout << "Warning: HTTP 1xx responses cannot have body!\n";
+    Logger::warning() << "HTTP 1xx responses cannot have body!";
 
     return *this;
   }
 
   if (status_ == HttpStatus::OK_NO_CONTENT)
   {
-    std::cout << "Warning: HTTP 204 response cannot have body!\n";
+    Logger::warning() << "HTTP 204 response cannot have body!";
 
     return *this;
   }
@@ -96,7 +96,7 @@ void HttpResponse::clear_body()
 {
   if (skip_body_)
   {
-    std::cout << "Warning: body already skipped\n";
+    Logger::warning() << "Warning: body already skipped";
   }
 
   skip_body_ = true;
@@ -175,7 +175,7 @@ std::string HttpResponse::get_status_line_() const
   }
 
   return std::to_string(static_cast<int>(HttpStatus::INTERNAL_SERVER_ERROR)) +
-         "Internal Server Error";
+         " Internal Server Error";
 };
 
 bool HttpResponse::has_body() const { return !body_.empty(); }

@@ -1,6 +1,5 @@
 #include "router.hpp"
 
-#include <iostream>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -9,6 +8,7 @@
 #include "http/http-method.hpp"
 #include "http/http-request.hpp"
 #include "http/http-response.hpp"
+#include "logger/logger.hpp"
 
 void Router::get(const std::string& path, const Handler& handler)
 {
@@ -73,14 +73,14 @@ Handler Router::wrap_handler_(const HttpMethod& method, const Handler& handler)
 
     if (method.key() == HttpMethodKey::Head && res.has_body())
     {
-      std::cout << "Warning: HEAD response should NOT have body\n";
+      Logger::warning() << "HEAD response should NOT have body";
 
       res.clear_body();
     }
 
     if (req.method().key() == HttpMethodKey::Head && res.has_body())
     {
-      std::cout << "Info: HEAD response body was cleared\n";
+      Logger::info() << "HEAD response body was cleared";
 
       res.clear_body();
     }

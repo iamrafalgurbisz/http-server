@@ -2,9 +2,10 @@
 
 #include <algorithm>
 #include <charconv>
-#include <iostream>
 #include <string>
 #include <system_error>
+
+#include "logger/logger.hpp"
 
 const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
 {
@@ -25,7 +26,7 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
   size_t req_first_space = req.find(' ');
   if (req_first_space == std::string_view::npos)
   {
-    std::cout << "Invalid first space\n";
+    Logger::error() << "Invalid first space";
 
     return HttpRequestParseResult::Invalid;
   }
@@ -33,14 +34,14 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
   size_t req_second_space = req.find(' ', req_first_space + 1);
   if (req_second_space == std::string_view::npos)
   {
-    std::cout << "Invalid string\n";
+    Logger::error() << "Invalid string";
 
     return HttpRequestParseResult::Invalid;
   }
 
   if (req.find(' ', req_second_space + 1) != std::string_view::npos)
   {
-    std::cout << "Invalid spacing\n";
+    Logger::error() << "Invalid spacing";
 
     return HttpRequestParseResult::Invalid;
   }
@@ -49,7 +50,7 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
 
   if (!method.is_valid())
   {
-    std::cout << "Invalid method\n";
+    Logger::error() << "Invalid method";
 
     return HttpRequestParseResult::Invalid;
   }
@@ -67,7 +68,7 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
 
   if (path_.empty() || version_.empty())
   {
-    std::cout << "Invalid path and/or version\n";
+    Logger::error() << "Invalid path and/or version";
 
     return HttpRequestParseResult::Invalid;
   }
@@ -102,7 +103,7 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
 
     if (separator == std::string_view::npos)
     {
-      std::cout << "Invalid separator\n";
+      Logger::error() << "Invalid separator";
 
       return HttpRequestParseResult::Invalid;
     }
@@ -115,8 +116,17 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
     switch (header_key)
     {
       case HeaderKey::Host:
-        if (header_value.empty() || !host_.empty())
+        if (!host_.empty())
         {
+          Logger::error() << "Duplicate Host header";
+
+          return HttpRequestParseResult::Invalid;
+        }
+
+        if (header_value.empty())
+        {
+          Logger::error() << "Invalid Host header value";
+
           return HttpRequestParseResult::Invalid;
         }
 
@@ -141,10 +151,7 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
 
       case HeaderKey::ContentLength:
       {
-        if (content_length_ != 0)
-        {
-          return HttpRequestParseResult::Invalid;
-        }
+        // TODO: handle header duplicate
 
         std::size_t result;
 
@@ -155,7 +162,7 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
         if (parse_result.ec != std::errc{} ||
             parse_result.ptr != header_value.data() + header_value.size())
         {
-          std::cout << "Invalid Content-Length header value \n";
+          Logger::error() << "Invalid Content-Length header value";
 
           return HttpRequestParseResult::Invalid;
         }

@@ -6,13 +6,13 @@
 
 #include <cerrno>
 #include <csignal>
-#include <iostream>
 #include <string>
 #include <system_error>
 
 #include "http/http-method.hpp"
 #include "http/http-request.hpp"
 #include "http/http-response.hpp"
+#include "logger/logger.hpp"
 #include "router/router.hpp"
 
 Server::Server(const Router& router) : router_(router) {};
@@ -42,6 +42,7 @@ void Server::start(int PORT)
   constexpr std::size_t MAX_BODY_SIZE = 32 * 1024;
 
   server_socket_ = socket(AF_INET, SOCK_STREAM, 0);
+
   if (server_socket_ < 0)
   {
     throw std::system_error(errno, std::generic_category(), "server_socket");
@@ -76,7 +77,7 @@ void Server::start(int PORT)
     throw std::system_error(errno, std::generic_category(), "listen");
   }
 
-  std::cout << "Listening on port " << PORT << "..." << "\n";
+  Logger::info() << "Listening on port " << PORT << "...";
 
   loop_();
 }
@@ -147,7 +148,7 @@ void Server::loop_()
 
       HttpRequestParseResult parse_result = req.parse(buffer);
 
-      std::cout << "[" << req.method().str() << "] " << req.path() << "\n";
+      Logger::info() << "[" << req.method().str() << "] " << req.path();
 
       if (parse_result == HttpRequestParseResult::Incomplete)
       {
@@ -242,7 +243,8 @@ void Server::loop_()
         if (req.method().key() == HttpMethodKey::Head &&
             path_handlers.find(HttpMethodKey::Get) != path_handlers.end())
         {
-          std::cout << "HEAD request " << req.path() << " was mapped to GET\n";
+          Logger::info() << "HEAD request " << req.path()
+                         << " was mapped to GET";
 
           HttpResponse res =
               path_handlers.find(HttpMethodKey::Get)->second(req);

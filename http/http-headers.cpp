@@ -1,7 +1,8 @@
 #include "http-headers.hpp"
 
-#include <iostream>
 #include <optional>
+
+#include "logger/logger.hpp"
 
 HttpHeaders::HttpHeaders() {}
 
@@ -9,8 +10,9 @@ void HttpHeaders::set(HeaderKey key, std::string_view value)
 {
   if (key == HeaderKey::ContentLength)
   {
-    std::cout << "Passed Content-Length was ignored. Content-Length is being "
-                 "automatically calculated from response's body\n";
+    Logger::warning()
+        << "Passed Content-Length was ignored. Content-Length is being "
+           "automatically calculated from response's body";
 
     return;
   };
@@ -19,8 +21,8 @@ void HttpHeaders::set(HeaderKey key, std::string_view value)
 
   if (found_header == headers_.end())
   {
-    std::cout << "Warning: overwriting " << parse_header_key(key) << " with "
-              << value << "\n";
+    Logger::warning() << "Warning: overwriting " << parse_header_key(key)
+                      << " with " << value;
   }
 
   headers_.insert({key, value});
