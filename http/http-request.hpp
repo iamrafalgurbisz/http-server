@@ -15,11 +15,14 @@ enum class HttpRequestParseResult
 {
   Incomplete,
   Invalid,
+  InvalidHttpVersion,
   Complete,
+  DuplicateHost,
   UriTooLarge,
   HeadersTooLarge,
   BodyTooLarge,
-  UnknownExpectation
+  UnknownExpectation,
+  WaitingForContinue
 };
 
 class HttpRequest

@@ -19,7 +19,7 @@ void HttpHeaders::set(HeaderKey key, std::string_view value)
 
   auto found_header = headers_.find(key);
 
-  if (found_header == headers_.end())
+  if (found_header != headers_.end())
   {
     Logger::warning() << "Warning: overwriting " << parse_header_key(key)
                       << " with " << value;

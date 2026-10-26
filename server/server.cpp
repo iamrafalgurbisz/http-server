@@ -39,8 +39,6 @@ void Server::start(int PORT)
   running_ = 1;
   install_signal_handlers_();
 
-  constexpr std::size_t MAX_BODY_SIZE = 32 * 1024;
-
   server_socket_ = socket(AF_INET, SOCK_STREAM, 0);
 
   if (server_socket_ < 0)
@@ -141,6 +139,7 @@ void Server::loop_()
         }
 
         std::perror("recv");
+
         break;
       }
 
@@ -183,6 +182,13 @@ void Server::loop_()
         break;
       }
 
+      if (parse_result == HttpRequestParseResult::DuplicateHost)
+      {
+        respond_(HttpResponse::BadRequest());
+
+        break;
+      }
+
       if (parse_result == HttpRequestParseResult::Invalid)
       {
         respond_(HttpResponse::BadRequest());
@@ -190,12 +196,14 @@ void Server::loop_()
         break;
       }
 
-      if (!req.version().ends_with("1.1"))
+      if (parse_result == HttpRequestParseResult::InvalidHttpVersion)
       {
         respond_(HttpResponse::HttpVersionNotSupported());
+
+        break;
       }
 
-      if (req.expect() == Expectation::Continue)
+      if (parse_result == HttpRequestParseResult::WaitingForContinue)
       {
         auto res = HttpResponse::Continue();
 
@@ -257,6 +265,22 @@ void Server::loop_()
         if (path_handlers.find(req.method().key()) == path_handlers.end())
         {
           auto res = HttpResponse::MethodNotAllowed();
+
+          std::vector<std::string> options = router_.get_options_(req.path());
+
+          std::string opts;
+
+          for (const auto& option : options)
+          {
+            if (!opts.empty())
+            {
+              opts += ", ";
+            }
+
+            opts += option;
+          }
+
+          res.header(HeaderKey::Allow, opts);
 
           respond_(res);
 

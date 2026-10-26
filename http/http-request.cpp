@@ -6,6 +6,7 @@
 #include <system_error>
 
 #include "logger/logger.hpp"
+#include "utils/string/trim.hpp"
 
 const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
 {
@@ -17,6 +18,11 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
 
   if (req_pos == std::string_view::npos)
   {
+    if (buffer.size() > MAX_REQUEST_LINE_SIZE)
+    {
+      return HttpRequestParseResult::UriTooLarge;
+    }
+
     return HttpRequestParseResult::Incomplete;
   }
 
@@ -73,20 +79,33 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
     return HttpRequestParseResult::Invalid;
   }
 
+  if (version_ != "HTTP/1.1")
+  {
+    return HttpRequestParseResult::InvalidHttpVersion;
+  }
+
   /* INFO: HEADERS */
-  size_t headers_end_pos = buffer.find("\r\n\r\n", req_pos + 2);
+  const size_t headers_start   = req_pos + 2;
+  const size_t headers_end_pos = buffer.find("\r\n\r\n", req_pos);
 
   if (headers_end_pos == std::string_view::npos)
   {
+    if (buffer.size() - headers_start > MAX_HEADERS_SIZE)
+    {
+      return HttpRequestParseResult::HeadersTooLarge;
+    }
+
     return HttpRequestParseResult::Incomplete;
   }
 
-  size_t i = req_pos + 2;
+  const size_t headers_size =
+      headers_end_pos > req_pos ? headers_end_pos - headers_start : 0;
 
-  if (headers_end_pos - i > MAX_HEADERS_SIZE)
-  {
+  if (headers_size > MAX_HEADERS_SIZE)
     return HttpRequestParseResult::HeadersTooLarge;
-  }
+
+  std::string_view headers_block = buffer.substr(headers_start, headers_size);
+  size_t           i             = headers_start;
 
   while (i < headers_end_pos)
   {
@@ -109,7 +128,7 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
     }
 
     std::string_view header_raw_key = header.substr(0, separator);
-    std::string_view header_value   = header.substr(separator + 2);
+    std::string_view header_value   = trim(header.substr(separator + 1));
 
     HeaderKey header_key = parse_header_key_(header_raw_key);
 
@@ -167,6 +186,11 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
           return HttpRequestParseResult::Invalid;
         }
 
+        if (result > MAX_BODY_SIZE)
+        {
+          return HttpRequestParseResult::BodyTooLarge;
+        }
+
         content_length_ = result;
 
         break;
@@ -203,9 +227,14 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
     i = pos + 2;
   }
 
+  if (expect_ == Expectation::Continue)
+  {
+    return HttpRequestParseResult::WaitingForContinue;
+  }
+
   if (host_.empty())
   {
-    return HttpRequestParseResult::UnknownExpectation;
+    return HttpRequestParseResult::Invalid;
   }
 
   size_t body_start    = headers_end_pos + 4;
@@ -213,6 +242,11 @@ const HttpRequestParseResult HttpRequest::parse(std::string_view buffer)
 
   if (received_body < content_length_)
   {
+    if (received_body > MAX_BODY_SIZE)
+    {
+      return HttpRequestParseResult::BodyTooLarge;
+    }
+
     return HttpRequestParseResult::Incomplete;
   }
 
